@@ -1,17 +1,19 @@
-# Chapter 2 - Model Cards and Documentation
+# Chapter 3 - Audit Trail, Logging & Prediction Traceability
 
 ## Overview
 
-This exercise introduces the concept of **Model Cards**, a standardized way to document machine learning models.
+This project demonstrates how to transform a machine learning model into a **traceable and auditable AI service**.
 
-The objective is to understand how model documentation improves:
+Starting from a trained Iris classification model, we build a complete inference system with:
 
-- Transparency
-- Reproducibility
-- Traceability
-- AI governance and compliance (AI Act)
+- FastAPI
+- MLflow metadata tracking
+- Structured audit logs
+- User pseudonymization
+- Prediction traceability
+- GDPR and AI Act considerations
 
-You will train a simple machine learning model on the Iris dataset and progressively complete a Model Card describing the model, its performance, limitations, and intended use.
+The objective is to understand how to monitor and investigate AI systems once they are deployed in production.
 
 ---
 
@@ -19,60 +21,142 @@ You will train a simple machine learning model on the Iris dataset and progressi
 
 By completing this exercise, you will learn how to:
 
-- Train a machine learning model
-- Document a model using a Model Card
-- Describe datasets, metrics, and limitations
-- Publish documentation on Hugging Face Hub
-- Apply documentation practices aligned with responsible AI principles
+- Serve a machine learning model through an API
+- Implement structured logging with Structlog
+- Create an audit trail for predictions
+- Link predictions to MLflow runs and Git commits
+- Pseudonymize user identifiers using HMAC-SHA256
+- Reconstruct the history of a prediction
+- Apply GDPR and AI Act logging principles
 
 ---
 
-## Project Structure
+## Project Architecture
 
 ```text
-chapitre-2/
-├── train.py
-├── model_card.md
+exercice/
+├── app/
+│   └── main.py
+├── src/
+│   ├── train.py
+│   └── audit_query.py
+├── model_artifacts/
+│   ├── model.pkl
+│   ├── model_metadata.pkl
+│   └── run_id.txt
+├── logs/
+│   └── audit.jsonl
+├── docs/
+│   ├── audit_trail.md
+│   └── model_card.md
+├── Dockerfile
+├── docker-compose.yml
 ├── pyproject.toml
-└── .env.example
+├── requirements.txt
+└── .env
 ```
-
-| File | Description |
-|--------|-------------|
-| `train.py` | Training script (provided, do not modify) |
-| `model_card.md` | Model Card template to complete |
-| `pyproject.toml` | Project dependencies |
-| `.env.example` | Hugging Face token template |
 
 ---
 
-## Prerequisites
+## Tech Stack
 
-- Git
-- UV package manager
-- Hugging Face account
+- Python
+- FastAPI
+- Scikit-Learn
+- MLflow
+- Structlog
+- Docker
+- UV
+- HMAC-SHA256
 
-Install UV if needed:
+---
 
-```bash
-pip install uv
+## Features
+
+### Model Training
+
+The training pipeline:
+
+- Loads the Iris dataset
+- Trains a RandomForestClassifier
+- Logs metrics to MLflow
+- Stores model metadata
+- Saves model artifacts
+
+### Prediction API
+
+The API exposes:
+
+```http
+POST /predict
+```
+
+Example payload:
+
+```json
+{
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2,
+  "user_id": "12345"
+}
+```
+
+Example response:
+
+```json
+{
+  "request_id": "c9d7b1e8",
+  "prediction": 0,
+  "confidence": 0.98
+}
+```
+
+---
+
+### Audit Logging
+
+Every prediction generates an audit record containing:
+
+- Request ID
+- Model version
+- Git SHA
+- MLflow Run ID
+- Prediction
+- Confidence score
+- Latency
+- Pseudonymized user ID
+
+Example:
+
+```json
+{
+  "request_id": "c9d7b1e8",
+  "model_version": "iris-v1",
+  "git_sha": "abc123",
+  "mlflow_run_id": "run_001",
+  "prediction": 0,
+  "confidence": 0.98,
+  "latency_ms": 42,
+  "user_id_pseudo": "9b2fa..."
+}
+```
+
+Logs are stored in:
+
+```text
+logs/audit.jsonl
 ```
 
 ---
 
 ## Installation
 
-Clone the repository:
+Switch to the second branch 'chapitre-3'
 
 ```bash
-git clone  https://github.com/<votre-username>/AI-Act-Course.git
-cd AI-Act-Course
-```
-
-Go to right branch (chapitre-2):
-
-```bash
-git checkout chapitre-2
+git checkout chapitre-3
 ```
 
 Install dependencies:
@@ -83,109 +167,166 @@ uv sync
 
 ---
 
-## Run the Training
-
-Launch the training script:
-
-```bash
-uv run train.py
-```
-
-This script:
-
-- Loads the Iris dataset
-- Trains a RandomForestClassifier
-- Evaluates the model
-- Displays classification metrics
-- Saves the trained model
-
-Keep the generated metrics, as they will be required to complete the Model Card.
-
----
-
-## Complete the Model Card
-
-Open:
-
-```text
-model_card.md
-```
-
-Complete each section as you progress through the chapter:
-
-- Model Details
-- Intended Use
-- Factors
-- Metrics
-- Training Data
-- Evaluation Data
-- Quantitative Analyses
-- Ethical Considerations
-- Caveats and Recommendations
-- Reproducibility
-
----
-
-## Hugging Face Publication
-
-Create a `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Add your Hugging Face token:
-
-```env
-HF_TOKEN="hf_xxxxxxxxxxxxxxxxx"
-```
-
-Create a publication script:
-
-```bash
-publish_card.py
-```
+## Train the Model
 
 Run:
 
 ```bash
-uv run publish_card.py
+uv run src/train.py
 ```
 
-This will:
+Expected output:
 
-- Create a Hugging Face repository (if needed)
-- Upload the Model Card
-- Associate the documentation with the model repository
+```text
+model_artifacts/
+├── model.pkl
+├── model_metadata.pkl
+└── run_id.txt
+```
 
 ---
 
-## Expected Deliverables
+## Configure Environment Variables
+
+Generate a secret key:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Create a `.env` file:
+
+```env
+AUDIT_HMAC_KEY=<your-secret-key>
+```
+
+---
+
+## Run the API
+
+Using Docker:
+
+```bash
+docker compose up --build api
+```
+
+The API will be available at:
+
+```text
+http://localhost:8000
+```
+
+Swagger documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+---
+
+## Test a Prediction
+
+Using cURL:
+
+```bash
+curl -X POST http://localhost:8000/predict \
+-H "Content-Type: application/json" \
+-d '{
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2,
+  "user_id": "12345"
+}'
+```
+
+---
+
+## Query an Audit Trail
+
+Use the generated request ID:
+
+```bash
+uv run src/audit_query.py --request_id <REQUEST_ID>
+```
+
+Example output:
+
+```text
+=== Audit Trail ===
+
+Request ID      : c9d7b1e8
+Prediction      : 0
+Confidence      : 0.98
+Latency (ms)    : 42
+
+--- Model Metadata ---
+
+Model Version   : iris-v1
+MLflow Run ID   : run_001
+Git SHA         : abc123
+
+--- User ---
+
+User Pseudonym  : 9b2fa...
+```
+
+---
+
+## GDPR & AI Act Compliance
+
+## GDPR & AI Act Compliance
+
+Create a `docs/audit_trail.md` document describing the audit logging policy of the application, including the data collected, the purpose of collection (debugging, auditing, compliance, and incident investigation), the GDPR legal basis (Articles 6.1.f and 6.1.c), log retention period, and users' rights regarding their personal data.
+
+This exercise follows several good practices inspired by:
+
+### GDPR
+
+- Data minimization
+- User pseudonymization
+- Privacy by design
+- Limited retention period
+- User rights management
+
+### AI Act
+
+- Article 12: Logging requirements
+- Article 19: Log retention
+- Article 72: Post-market monitoring
+
+### GitHub Repository
+
+## Deliverables
 
 ### GitHub Repository
 
 Must contain:
 
-- Source code
-- Completed `model_card.md`
-- README.md
+- FastAPI application
+- Training pipeline
+- Audit trail system
+- Model Card
+- GDPR logging documentation
+- README
 
-### Hugging Face Repository
+### Documentation
 
-Must contain:
-
-- Published Model Card
-- Private repository named `ch02-iris`
+- `docs/model_card.md`
+- `docs/audit_trail.md`
 
 ---
 
 ## Key Concepts Covered
 
-- Model Cards
-- Responsible AI
-- AI Act documentation requirements
-- Hugging Face Hub
-- Reproducibility
-- Machine Learning Governance
+- Audit Trail
+- Structured Logging
+- Model Traceability
+- MLflow
+- FastAPI
+- GDPR
+- AI Act
+- Privacy by Design
+- MLOps Fundamentals
 
 ---

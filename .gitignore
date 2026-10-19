@@ -1,1 +1,6 @@
 .env 
+__pycache__/
+uv.lock
+.venv/
+venv/
+mlruns/
