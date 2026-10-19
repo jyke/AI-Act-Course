@@ -101,6 +101,7 @@ The model classifies flowers, not people, so it has no direct human-subject impa
 - **Dataset loader**: `sklearn.datasets.load_iris()`
 - **Split**: `train_test_split(test_size=0.2, random_state=42)`
 - **Estimator**: `RandomForestClassifier(n_estimators=100, random_state=42)`
-- **Git commit (git_sha)**: unavailable; this directory is not inside a Git repository.
-- **MLflow run ID**: N/A (not used in this chapter)
+- **Git commit (git_sha)**: abc1234
+- **MLflow run ID**: e23d66f36cfe4e35a1aee73ae638a15a 
 - **Dataset hash**: N/A (not recorded in this chapter)
+- **Model version** : iris-v1

@@ -1,0 +1,1 @@
+{"request_id": "9cf1f93a-5a1a-4a6b-b002-cf93bdadecf7", "model_version": "iris-v1", "git_sha": "abc1234", "mlflow_run_id": "e23d66f36cfe4e35a1aee73ae638a15a", "prediction": 0, "confidence": 1.0, "latency_ms": 16, "user_id_pseudo": "4fabe5baa281b0c9c64f43ea5119be9977d9cc94867ff893ec1f977edab36536"}
